@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::RwLock;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use serde::{Deserialize, Serialize};
 use actix_web::{App, HttpResponse, HttpServer, delete, get, http, post, web};
@@ -12,19 +12,19 @@ struct Todo {
 }
 
 struct Database {
-    store: Mutex<HashMap<u32, Todo>>,
+    store: RwLock<HashMap<u32, Todo>>,
 }
 
 #[get("/api/todo")]
 async fn list_todos(db: web::Data<Database>) -> HttpResponse {
-    let db = db.store.lock().unwrap();
+    let db = db.store.read().unwrap();
     HttpResponse::Ok()
         .json(db.values().collect::<Vec<_>>())
 }
 
 #[delete("/api/todo/{id}")]
 async fn delete_todo(id: web::Path<u32>, db: web::Data<Database>) -> HttpResponse {
-    let mut db = db.store.lock().unwrap();
+    let mut db = db.store.write().unwrap();
     match db.remove(&id) {
         Some(_res) => HttpResponse::Ok().body(""),
         None => HttpResponse::BadRequest().body(format!("No todo with id {}", id))
@@ -33,7 +33,7 @@ async fn delete_todo(id: web::Path<u32>, db: web::Data<Database>) -> HttpRespons
 
 #[get("/api/todo/{id}")]
 async fn get_todo(id: web::Path<u32>, db: web::Data<Database>) -> HttpResponse {
-    let db = db.store.lock().unwrap();
+    let db = db.store.read().unwrap();
     match db.get(&id) {
         Some(res) => HttpResponse::Ok().json(res),
         None => HttpResponse::NotFound().body(format!("No todo with id {}", id))
@@ -42,7 +42,7 @@ async fn get_todo(id: web::Path<u32>, db: web::Data<Database>) -> HttpResponse {
 
 #[post("/api/todo")]
 async fn create_todo(db: web::Data<Database>, body: web::Json<Todo>) -> HttpResponse {
-    let mut db = db.store.lock().unwrap();
+    let mut db = db.store.write().unwrap();
     let todo_id = body.id;
     db.insert(todo_id, body.into_inner());
     HttpResponse::Created()
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
     };
 
     let db = web::Data::new(Database {
-        store: Mutex::new(HashMap::new()),
+        store: RwLock::new(HashMap::new()),
     });
 
     HttpServer::new(move || {
