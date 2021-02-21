@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub(crate) struct Todo {

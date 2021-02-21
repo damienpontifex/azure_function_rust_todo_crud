@@ -1,8 +1,8 @@
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use std::net::{Ipv4Addr, Ipv6Addr};
-use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 
-mod services;
 mod database;
+mod services;
 
 use crate::database::Database;
 
